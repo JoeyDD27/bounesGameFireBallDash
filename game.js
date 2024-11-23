@@ -114,7 +114,7 @@ class Game {
         speed: this.PROJECTILE_SPEED,
         width: 10,
         height: 5,
-        direction: this.player.direction
+        direction: 'right'
       };
 
       switch (this.player.direction) {
@@ -127,12 +127,12 @@ class Game {
           arrow.height = 5;
           break;
         case 'up':
-          arrow.width = 5;
-          arrow.height = 15;
+          arrow.width = 15;
+          arrow.height = 5;
           break;
         case 'down':
-          arrow.width = 5;
-          arrow.height = 15;
+          arrow.width = 15;
+          arrow.height = 5;
           break;
       }
 

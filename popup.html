@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>2D Archer Game</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="game-container">
+    <div id="startScreen" class="screen">
+      <h1>Archer Game</h1>
+      <button id="startButton">Start Game</button>
+      <div class="instructions">
+        <p>Controls:</p>
+        <ul>
+          <li>Arrow keys to move</li>
+          <li>Space to shoot</li>
+        </ul>
+      </div>
+    </div>
+    <canvas id="gameCanvas" width="400" height="300" style="display: none;"></canvas>
+    <div id="stats" style="display: none;">Lives: <span id="lives">1</span></div>
+  </div>
+  <script src="game.js"></script>
+</body>
+
+</html>

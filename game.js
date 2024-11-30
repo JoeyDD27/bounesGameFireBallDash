@@ -86,7 +86,6 @@ class Game {
   gameOver() {
     this.gameStarted = false;
     setTimeout(() => {
-      alert('Game Over!');
       location.reload();
     }, 100);
   }
@@ -243,7 +242,6 @@ class Game {
       if (this.checkCollision(fireball, this.player)) {
         this.player.lives--;
         if (this.player.lives <= 0) {
-          alert('Game Over!');
           location.reload();
         }
         this.fireballs.splice(index, 1);
@@ -355,7 +353,6 @@ class Game {
   victory() {
     this.gameStarted = false;
     setTimeout(() => {
-      alert('You win!');
       location.reload();
     }, 100);
   }

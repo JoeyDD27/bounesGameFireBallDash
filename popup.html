@@ -8,8 +8,21 @@
 
 <body>
   <div class="game-container">
+    <div id="contractScreen" class="screen" style="display: none;">
+      <h2>User Agreement</h2>
+      <div class="contract-text">
+        <p>By playing this game, I agree that:</p>
+        <ul>
+          <li>I will only play this game during appropriate break times</li>
+          <li>I will not use this game during class time or when I should be studying</li>
+          <li>I understand that gaming should not interfere with my academic responsibilities</li>
+        </ul>
+      </div>
+      <button id="acceptContract">I Agree</button>
+    </div>
     <div id="startScreen" class="screen">
       <h1>Archer Game</h1>
+      <div id="gameResult" class="game-result"></div>
       <button id="startButton">Start Game</button>
       <div class="instructions">
         <p>Controls:</p>
@@ -20,7 +33,10 @@
       </div>
     </div>
     <canvas id="gameCanvas" width="400" height="300" style="display: none;"></canvas>
-    <div id="stats" style="display: none;">Lives: <span id="lives">1</span></div>
+    <div id="stats" style="display: none;">
+      Lives: <span id="lives">1</span> |
+      Enemy HP: <span id="enemyHealth">1</span>
+    </div>
   </div>
   <script src="game.js"></script>
 </body>

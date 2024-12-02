@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "2D Archer Game",
-  "version": "0.0.1",
-  "description": "A simple 2D game where you shoot enemies and dodge fireballs",
+  "name": "Bounes archer",
+  "version": "0.5",
+  "description": "A simple 2D game where you shoot enemies",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

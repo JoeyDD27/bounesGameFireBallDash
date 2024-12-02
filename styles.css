@@ -57,3 +57,59 @@ body {
 .instructions li {
   margin: 5px 0;
 }
+
+.game-result {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 10px 0;
+  text-align: center;
+}
+
+.win {
+  color: #4CAF50;
+}
+
+.lose {
+  color: #f44336;
+}
+
+.contract-text {
+  text-align: left;
+  padding: 20px;
+  margin: 10px;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  max-width: 80%;
+}
+
+#acceptContract {
+  padding: 10px 20px;
+  font-size: 16px;
+  background: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin: 20px 0;
+}
+
+#acceptContract:hover {
+  background: #1976D2;
+}
+
+#contractScreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  background: #f0f0f0;
+}
+
+#startScreen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 90;
+  background: #f0f0f0;
+}

@@ -84,7 +84,7 @@ class Game {
       width: 20,
       height: 20,
       speed: 5,
-      lives: this.level === 4 || this.level === 5 ? 5 : 1, // 5 HP for levels 4 and 5
+      lives: this.level === 4 || this.level === 5 ? 5 : 1, // Only level 4 and 5 get 5 lives
       direction: 'right'
     };
 
@@ -124,7 +124,9 @@ class Game {
       case 2: return 3;
       case 3: return 10;
       case 4: return 4;
-      case 5: return 10; // Level 5 enemy has 8 HP
+      case 5: return 10;
+      case 6: return 5;
+      case 7: return 5; // Changed from 1 to 5 HP
       default: return 1;
     }
   }
@@ -267,14 +269,13 @@ class Game {
 
       // Check collision with enemy
       if (this.checkCollision(arrow, this.enemy)) {
-        // Deal 3 damage in level 5 or higher, otherwise 1 damage
-        const arrowDamage = this.level >= 5 ? 3 : 1;
+        // Deal 3 damage in level 5, 1 damage in all other levels
+        const arrowDamage = this.level === 5 ? 3 : 1;
         this.enemy.health -= arrowDamage;
         document.getElementById('enemyHealth').textContent = this.enemy.health;
         this.arrows.splice(i, 1);
 
         if (this.enemy.health <= 0) {
-          // Stop the game loop before showing victory
           this.gameStarted = false;
           setTimeout(() => this.victory(), 100);
           return;
@@ -283,11 +284,11 @@ class Game {
     }
 
     // Enemy shoots fireballs - Add level check
-    if (this.level === 1 && Math.random() < 0.02) {
+    if ((this.level === 1 || this.level === 6 || this.level === 7) && Math.random() < 0.02) {
       this.fireballs.push({
         x: this.enemy.x,
         y: this.enemy.y,
-        speed: 4,
+        speed: this.level === 7 ? 10 : this.level === 6 ? 6 : 4, // Super fast speed for level 7
         width: 15,
         height: 15,
         dx: this.player.x - this.enemy.x,
@@ -331,8 +332,8 @@ class Game {
       });
     }
 
-    // Update fireballs for level 1 and 5
-    if (this.level === 1 || this.level === 5) {
+    // Update fireballs for level 1, 5, 6, and 7
+    if (this.level === 1 || this.level === 5 || this.level === 6 || this.level === 7) {
       this.fireballs.forEach((fireball, index) => {
         let distance = Math.sqrt(fireball.dx * fireball.dx + fireball.dy * fireball.dy);
         fireball.x += (fireball.dx / distance) * fireball.speed;
@@ -422,8 +423,8 @@ class Game {
           this.enemy.moveDirection = -1;
         }
       }
-    } else if (this.level === 1 || this.level === 4) {
-      // Level 1 and 4 behavior
+    } else if (this.level === 1 || this.level === 4 || this.level === 6 || this.level === 7) { // Added level 7
+      // Level 1, 4, 6, and 7 behavior
       if (this.enemy.isDodging) {
         if (this.enemy.dodgeDirection === 'up') {
           this.enemy.y -= this.enemy.dodgeSpeed;
@@ -570,6 +571,14 @@ class Game {
       this.level = 5;
       await this.saveLevel(5);
       this.showLevelComplete("Level 4 Complete! Ready for Level 5");
+    } else if (this.level === 5) {
+      this.level = 6;
+      await this.saveLevel(6);
+      this.showLevelComplete("Level 5 Complete! Ready for Level 6");
+    } else if (this.level === 6) {
+      this.level = 7;
+      await this.saveLevel(7);
+      this.showLevelComplete("Level 6 Complete! Ready for Level 7");
     } else {
       this.gameStarted = false;
       this.tnts = []; // Clear all TNTs

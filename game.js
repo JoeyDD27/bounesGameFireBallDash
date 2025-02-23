@@ -21,6 +21,13 @@ class Game {
     this.lastTNTSpawn = 0;
     this.TNT_SPAWN_INTERVAL = 4000; // 4 seconds for level 5 (slower than level 4)
     this.MAX_TNTS = 4; // Fewer max TNTs for level 5 to balance difficulty
+
+    // Add level selector elements
+    this.levelSelectorBtn = document.getElementById('levelSelectorBtn');
+    this.levelDropdown = document.getElementById('levelDropdown');
+
+    // Setup level selector
+    this.setupLevelSelector();
   }
 
   setupContract() {
@@ -84,28 +91,49 @@ class Game {
       width: 20,
       height: 20,
       speed: 5,
-      lives: this.level === 4 || this.level === 5 ? 5 : 1, // Only level 4 and 5 get 5 lives
-      direction: 'right'
+      lives: this.level === 10 ? 10 : this.level === 9 ? 3 : this.level === 4 || this.level === 5 ? 5 : 1,
+      direction: 'right',
+      lastAutoShot: 0
     };
 
-    this.enemy = {
-      x: this.canvas.width - 70,
-      y: this.canvas.height / 2,
-      width: 20,
-      height: 20,
-      speed: 3,
-      health: this.getEnemyHealth(),
-      isDodging: false,
-      dodgeSpeed: 10,
-      dodgeCooldown: 0,
-      dodgeDuration: 1000000,
-      moveDirection: 1,
-      lastDirectionChange: 0,
-      minY: 20,
-      maxY: this.canvas.height - 40,
-      chaseMode: false, // New property for level 5
-      chaseCooldown: 0
-    };
+    if (this.level === 10) {
+      // Create array of 5 enemies for level 10
+      this.enemies = Array(5).fill(null).map(() => ({
+        x: this.canvas.width - 70,
+        y: Math.random() * (this.canvas.height - 40) + 20,
+        width: 20,
+        height: 20,
+        speed: 3,
+        health: this.getEnemyHealth(),
+        lastTeleport: 0,
+        lastShotTime: 0
+      }));
+      this.enemy = this.enemies[0]; // Keep reference for compatibility
+    } else {
+      // Normal single enemy setup
+      this.enemy = {
+        x: this.canvas.width - 70,
+        y: this.canvas.height / 2,
+        width: 20,
+        height: 20,
+        speed: 3,
+        health: this.getEnemyHealth(),
+        isDodging: false,
+        dodgeSpeed: 10,
+        dodgeCooldown: 0,
+        dodgeDuration: 1000000,
+        moveDirection: 1,
+        lastDirectionChange: 0,
+        minY: 20,
+        maxY: this.canvas.height - 40,
+        chaseMode: false,
+        chaseCooldown: 0,
+        lastShotTime: 0,
+        isShielded: this.level === 8,
+        lastTeleport: 0 // for level 9 teleportation
+      };
+      this.enemies = [this.enemy];
+    }
 
     this.arrows = [];
     this.fireballs = [];
@@ -126,7 +154,10 @@ class Game {
       case 4: return 4;
       case 5: return 10;
       case 6: return 5;
-      case 7: return 5; // Changed from 1 to 5 HP
+      case 7: return 5;
+      case 8: return 5;
+      case 9: return 5;
+      case 10: return 5; // Level 10 enemies have 5 HP each
       default: return 1;
     }
   }
@@ -238,57 +269,80 @@ class Game {
     // Enemy movement
     this.updateEnemy();
 
-    // Update arrows with fixed collision detection
+    // Update arrows with movement
     for (let i = this.arrows.length - 1; i >= 0; i--) {
       const arrow = this.arrows[i];
 
-      // Update arrow position
-      switch (arrow.direction) {
-        case 'right':
-          arrow.x += arrow.speed;
-          break;
-        case 'left':
-          arrow.x -= arrow.speed;
-          break;
-        case 'up':
-          arrow.y -= arrow.speed;
-          break;
-        case 'down':
-          arrow.y += arrow.speed;
-          break;
+      // Move arrows
+      if (this.level === 10) {
+        arrow.x += arrow.dx * arrow.speed;
+        arrow.y += arrow.dy * arrow.speed;
+      } else {
+        // Update arrow position
+        switch (arrow.direction) {
+          case 'right':
+            arrow.x += arrow.speed;
+            break;
+          case 'left':
+            arrow.x -= arrow.speed;
+            break;
+          case 'up':
+            arrow.y -= arrow.speed;
+            break;
+          case 'down':
+            arrow.y += arrow.speed;
+            break;
+        }
       }
 
       // Remove arrows that go off screen
-      if (arrow.x > this.canvas.width ||
-        arrow.x < 0 ||
-        arrow.y > this.canvas.height ||
-        arrow.y < 0) {
+      if (arrow.x > this.canvas.width || arrow.x < 0 ||
+        arrow.y > this.canvas.height || arrow.y < 0) {
         this.arrows.splice(i, 1);
         continue;
       }
 
-      // Check collision with enemy
-      if (this.checkCollision(arrow, this.enemy)) {
-        // Deal 3 damage in level 5, 1 damage in all other levels
-        const arrowDamage = this.level === 5 ? 3 : 1;
-        this.enemy.health -= arrowDamage;
-        document.getElementById('enemyHealth').textContent = this.enemy.health;
-        this.arrows.splice(i, 1);
+      // Check collision with enemies
+      if (this.level === 10) {
+        for (let enemy of this.enemies) {
+          if (enemy.health > 0 && this.checkCollision(arrow, enemy)) {
+            enemy.health -= 1;
+            this.arrows.splice(i, 1);
+            break;
+          }
+        }
+      } else {
+        // Check collision with enemy
+        if (this.checkCollision(arrow, this.enemy)) {
+          if (this.level === 8) {
+            const timeSinceLastShot = Date.now() - this.enemy.lastShotTime;
+            if (timeSinceLastShot < 1000) {
+              this.enemy.health -= 1;
+              document.getElementById('enemyHealth').textContent = this.enemy.health;
+            }
+          } else {
+            const arrowDamage = this.level === 5 ? 3 : 1;
+            this.enemy.health -= arrowDamage;
+            document.getElementById('enemyHealth').textContent = this.enemy.health;
+          }
+          this.arrows.splice(i, 1);
 
-        if (this.enemy.health <= 0) {
-          this.gameStarted = false;
-          setTimeout(() => this.victory(), 100);
-          return;
+          if (this.enemy.health <= 0) {
+            this.gameStarted = false;
+            setTimeout(() => this.victory(), 100);
+            return;
+          }
         }
       }
     }
 
     // Enemy shoots fireballs - Add level check
-    if ((this.level === 1 || this.level === 6 || this.level === 7) && Math.random() < 0.02) {
+    if ((this.level === 1 || this.level === 6 || this.level === 7 || this.level === 8) && Math.random() < 0.02) {
+      this.enemy.lastShotTime = Date.now();
       this.fireballs.push({
         x: this.enemy.x,
         y: this.enemy.y,
-        speed: this.level === 7 ? 10 : this.level === 6 ? 6 : 4, // Super fast speed for level 7
+        speed: this.level === 7 ? 10 : this.level === 8 || this.level === 6 ? 6 : 4,
         width: 15,
         height: 15,
         dx: this.player.x - this.enemy.x,
@@ -332,8 +386,124 @@ class Game {
       });
     }
 
-    // Update fireballs for level 1, 5, 6, and 7
-    if (this.level === 1 || this.level === 5 || this.level === 6 || this.level === 7) {
+    // Level 9 special mechanics
+    if (this.level === 9) {
+      // Teleport every 2 seconds
+      if (Date.now() - this.enemy.lastTeleport > 2000) {
+        this.enemy.x = Math.random() * (this.canvas.width - 100) + 50;
+        this.enemy.y = Math.random() * (this.canvas.height - 100) + 50;
+        this.enemy.lastTeleport = Date.now();
+      }
+
+      // Multi-fireball attack with damage of 1
+      if (Math.random() < 0.02) {
+        // Shoot 3 fireballs in different directions
+        for (let i = 0; i < 3; i++) {
+          const angle = (Math.PI * 2 / 3) * i;
+          const baseX = this.player.x - this.enemy.x;
+          const baseY = this.player.y - this.enemy.y;
+
+          // Calculate spread directions
+          const dx = baseX * Math.cos(angle) - baseY * Math.sin(angle);
+          const dy = baseX * Math.sin(angle) + baseY * Math.cos(angle);
+
+          this.fireballs.push({
+            x: this.enemy.x,
+            y: this.enemy.y,
+            speed: 5,
+            width: 15,
+            height: 15,
+            dx: dx,
+            dy: dy,
+            damage: 1 // Explicitly set fireball damage to 1
+          });
+        }
+      }
+    }
+
+    // Level 10 auto-aim and auto-shoot
+    if (this.level === 10) {
+      // Auto-aim and auto-shoot every 500ms
+      if (Date.now() - this.player.lastAutoShot > 500) {
+        // Find closest enemy
+        let closestEnemy = null;
+        let closestDistance = Infinity;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.health > 0) {
+            const dx = enemy.x - this.player.x;
+            const dy = enemy.y - this.player.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestEnemy = enemy;
+            }
+          }
+        });
+
+        if (closestEnemy) {
+          // Calculate perfect aim to hit the enemy
+          const dx = closestEnemy.x - this.player.x;
+          const dy = closestEnemy.y - this.player.y;
+          const angle = Math.atan2(dy, dx);
+
+          this.arrows.push({
+            x: this.player.x,
+            y: this.player.y,
+            speed: this.PROJECTILE_SPEED,
+            width: 15,
+            height: 15,
+            dx: Math.cos(angle),
+            dy: Math.sin(angle)
+          });
+          this.player.lastAutoShot = Date.now();
+        }
+      }
+
+      // Update all enemies and their fireballs
+      this.enemies.forEach(enemy => {
+        // Teleport logic
+        if (Date.now() - enemy.lastTeleport > 2000) {
+          enemy.x = Math.random() * (this.canvas.width - 100) + 50;
+          enemy.y = Math.random() * (this.canvas.height - 100) + 50;
+          enemy.lastTeleport = Date.now();
+        }
+
+        // Multi-fireball attack
+        if (Math.random() < 0.01) {
+          for (let i = 0; i < 3; i++) {
+            const angle = (Math.PI * 2 / 3) * i;
+            const baseX = this.player.x - enemy.x;
+            const baseY = this.player.y - enemy.y;
+
+            const dx = baseX * Math.cos(angle) - baseY * Math.sin(angle);
+            const dy = baseX * Math.sin(angle) + baseY * Math.cos(angle);
+
+            this.fireballs.push({
+              x: enemy.x,
+              y: enemy.y,
+              speed: 5,
+              width: 15,
+              height: 15,
+              dx: dx,
+              dy: dy
+            });
+          }
+          enemy.lastShotTime = Date.now();
+        }
+      });
+
+      // Check for level completion
+      if (this.enemies.every(enemy => enemy.health <= 0)) {
+        this.gameStarted = false;
+        setTimeout(() => this.victory(), 100);
+        return;
+      }
+    }
+
+    // Update fireballs for all levels including level 10
+    if (this.level === 1 || this.level === 5 || this.level === 6 ||
+      this.level === 7 || this.level === 8 || this.level === 9 || this.level === 10) {
       this.fireballs.forEach((fireball, index) => {
         let distance = Math.sqrt(fireball.dx * fireball.dx + fireball.dy * fireball.dy);
         fireball.x += (fireball.dx / distance) * fireball.speed;
@@ -529,6 +699,24 @@ class Game {
       this.ctx.fillRect(fireball.x, fireball.y, fireball.width, fireball.height);
     });
 
+    // Draw shield for level 8 when active
+    if (this.level === 8) {
+      const timeSinceLastShot = Date.now() - this.enemy.lastShotTime;
+      if (timeSinceLastShot >= 1000) {
+        this.ctx.beginPath();
+        this.ctx.arc(
+          this.enemy.x + this.enemy.width / 2,
+          this.enemy.y + this.enemy.height / 2,
+          this.enemy.width * 0.8,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.strokeStyle = 'blue';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+      }
+    }
+
     // Update stats
     document.getElementById('lives').textContent = this.player.lives;
     document.getElementById('enemyHealth').textContent = this.enemy.health;
@@ -543,6 +731,31 @@ class Game {
         this.ctx.font = '10px Arial';
         this.ctx.fillText('TNT', tnt.x + 2, tnt.y + 12);
         this.ctx.fillStyle = '#FF4500';
+      });
+    }
+
+    // Draw all enemies for level 10
+    if (this.level === 10) {
+      this.enemies.forEach(enemy => {
+        if (enemy.health > 0) {
+          this.ctx.fillStyle = 'red';
+          this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+          // Draw teleport effect
+          if (Date.now() - enemy.lastTeleport < 200) {
+            this.ctx.beginPath();
+            this.ctx.arc(
+              enemy.x + enemy.width / 2,
+              enemy.y + enemy.height / 2,
+              enemy.width * 1.2,
+              0,
+              Math.PI * 2
+            );
+            this.ctx.strokeStyle = 'purple';
+            this.ctx.lineWidth = 3;
+            this.ctx.stroke();
+          }
+        }
       });
     }
   }
@@ -579,6 +792,18 @@ class Game {
       this.level = 7;
       await this.saveLevel(7);
       this.showLevelComplete("Level 6 Complete! Ready for Level 7");
+    } else if (this.level === 7) {
+      this.level = 8;
+      await this.saveLevel(8);
+      this.showLevelComplete("Level 7 Complete! Ready for Level 8");
+    } else if (this.level === 8) {
+      this.level = 9;
+      await this.saveLevel(9);
+      this.showLevelComplete("Level 8 Complete! Ready for Level 9");
+    } else if (this.level === 9) {
+      this.level = 10;
+      await this.saveLevel(10);
+      this.showLevelComplete("Level 9 Complete! Ready for Level 10");
     } else {
       this.gameStarted = false;
       this.tnts = []; // Clear all TNTs
@@ -722,6 +947,40 @@ class Game {
     } catch (error) {
       console.error('Error checking contract:', error);
     }
+  }
+
+  setupLevelSelector() {
+    // Toggle dropdown
+    this.levelSelectorBtn.addEventListener('click', () => {
+      const isHidden = this.levelDropdown.style.display === 'none';
+      this.levelDropdown.style.display = isHidden ? 'block' : 'none';
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (event) => {
+      if (!event.target.matches('#levelSelectorBtn') &&
+        !event.target.matches('.level-option')) {
+        this.levelDropdown.style.display = 'none';
+      }
+    });
+
+    // Handle level selection
+    const levelOptions = document.querySelectorAll('.level-option');
+    levelOptions.forEach(option => {
+      option.addEventListener('click', async () => {
+        const selectedLevel = parseInt(option.getAttribute('data-level'));
+        this.level = selectedLevel;
+        await this.saveLevel(selectedLevel);
+
+        // Update UI
+        const gameResult = document.getElementById('gameResult');
+        gameResult.textContent = `Switched to Level ${selectedLevel}`;
+        this.startButton.textContent = `Start Level ${selectedLevel}`;
+
+        // Hide dropdown
+        this.levelDropdown.style.display = 'none';
+      });
+    });
   }
 }
 
